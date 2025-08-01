@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        input[type="url"], textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="url"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            width: 100%;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .credibility-score {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .score-high { background: #28a745; }
+        .score-medium { background: #ffc107; color: #333; }
+        .score-low { background: #dc3545; }
+
+        .score-label {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .score-description {
+            color: #666;
+        }
+
+        .analysis-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .detail-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .detail-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .detail-card p {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .keyword-tag {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #495057;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .bias-indicator {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .bias-left {
+            background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #2196f3;
+        }
+
+        .bias-right {
+            background: linear-gradient(90deg, #fce4ec 0%, #f8bbd9 100%);
+            border-left: 4px solid #e91e63;
+        }
+
+        .bias-neutral {
+            background: linear-gradient(90deg, #f3e5f5 0%, #e1bee7 100%);
+            border-left: 4px solid #9c27b0;
+        }
+
+        .bias-mixed {
+            background: linear-gradient(90deg, #fff3e0 0%, #ffcc02 100%);
+            border-left: 4px solid #ff9800;
+        }
+
+        .bias-strength {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .objectivity-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        @media (max-width: 768px) {
+            .analysis-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Fake News Detector</h1>
+            <p>Analyze news articles and content for credibility using AI-powered detection</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <div class="input-tabs">
+                    <button class="tab active" onclick="switchTab('url')">Analyze URL</button>
+                    <button class="tab" onclick="switchTab('text')">Analyze Text</button>
+                </div>
+                
+                <div id="url-tab" class="tab-content active">
+                    <div class="form-group">
+                        <label for="url-input">Enter news article URL:</label>
+                        <input type="url" id="url-input" placeholder="https://example.com/news-article">
+                    </div>
+                </div>
+                
+                <div id="text-tab" class="tab-content">
+                    <div class="form-group">
+                        <label for="text-input">Paste article text:</label>
+                        <textarea id="text-input" placeholder="Paste the article content here..."></textarea>
+                    </div>
+                </div>
+                
+                <button class="analyze-btn" onclick="analyzeContent()">
+                    🔍 Analyze Content
+                </button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing content...</p>
+            </div>
+            
+            <div class="results" id="results">
+                <div class="credibility-score">
+                    <div class="score-circle" id="score-circle">
+                        <span id="score-text">0%</span>
+                    </div>
+                    <div class="score-label" id="score-label">Credibility Score</div>
+                    <div class="score-description" id="score-description"></div>
+                </div>
+                
+                <div class="analysis-details" id="analysis-details">
+                    <!-- Analysis details will be populated here -->
+                </div>
+            </div>
+            
+            <div class="error" id="error" style="display: none;">
+                <!-- Error messages will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        async function analyzeContent() {
+            const urlInput = document.getElementById('url-input').value;
+            const textInput = document.getElementById('text-input').value;
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+            const analyzeBtn = document.querySelector('.analyze-btn');
+            
+            // Clear previous results
+            results.style.display = 'none';
+            error.style.display = 'none';
+            
+            // Validate input
+            if (!urlInput && !textInput) {
+                showError('Please enter a URL or paste some text to analyze.');
+                return;
+            }
+            
+            // Show loading
+            loading.style.display = 'block';
+            analyzeBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: urlInput,
+                        text: textInput
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    showResults(data);
+                }
+                
+            } catch (err) {
+                showError('An error occurred while analyzing the content. Please try again.');
+            } finally {
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        }
+        
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+        
+        function showResults(data) {
+            const results = document.getElementById('results');
+            const scoreCircle = document.getElementById('score-circle');
+            const scoreText = document.getElementById('score-text');
+            const scoreLabel = document.getElementById('score-label');
+            const scoreDescription = document.getElementById('score-description');
+            const analysisDetails = document.getElementById('analysis-details');
+            
+            // Update score display
+            scoreText.textContent = data.score_percentage + '%';
+            scoreCircle.className = 'score-circle score-' + data.color;
+            scoreLabel.textContent = data.credibility_level + ' CREDIBILITY';
+            
+            // Set description based on credibility level
+            const descriptions = {
+                'HIGH': 'This content appears to be from a reliable source with credible information.',
+                'MEDIUM': 'This content has mixed signals - verify with additional sources.',
+                'LOW': 'This content shows signs of unreliability - approach with caution.'
+            };
+            scoreDescription.textContent = descriptions[data.credibility_level];
+            
+            // Build analysis details
+            let detailsHTML = '';
+            
+            // Source analysis
+            if (data.source_url) {
+                detailsHTML += `
+                    <div class="detail-card">
+                        <h3>📰 Source Analysis</h3>
+                        <p><strong>Title:</strong> ${data.title}</p>
+                        <p><strong>Assessment:</strong> ${data.source_analysis}</p>
+                        <p><strong>Source Score:</strong> ${Math.round(data.source_score * 100)}%</p>
+                    </div>
+                `;
+            }
+            
+            // Content analysis
+            detailsHTML += `
+                <div class="detail-card">
+                    <h3>📝 Content Analysis</h3>
+                    <p><strong>Content Score:</strong> ${Math.round(data.content_score * 100)}%</p>
+                    <p><strong>Clickbait Patterns:</strong> ${data.content_analysis.clickbait_patterns} detected</p>
+                    <p><strong>Sentiment:</strong> ${data.content_analysis.sentiment.compound > 0 ? 'Positive' : data.content_analysis.sentiment.compound < 0 ? 'Negative' : 'Neutral'}</p>
+                </div>
+            `;
+            
+            // Political bias analysis
+            const biasAnalysis = data.content_analysis.bias_analysis;
+            let biasClass = 'bias-neutral';
+            let biasIcon = '⚖️';
+            
+            if (biasAnalysis.bias_direction === 'Left-leaning') {
+                biasClass = 'bias-left';
+                biasIcon = '🔵';
+            } else if (biasAnalysis.bias_direction === 'Right-leaning') {
+                biasClass = 'bias-right';
+                biasIcon = '🔴';
+            } else if (biasAnalysis.bias_direction === 'Mixed/Balanced') {
+                biasClass = 'bias-mixed';
+                biasIcon = '🟡';
+            }
+            
+            detailsHTML += `
+                <div class="detail-card">
+                    <h3>🎯 Political Bias Analysis</h3>
+                    <div class="bias-indicator ${biasClass}">
+                        <span class="bias-strength">${biasIcon} ${biasAnalysis.bias_strength} ${biasAnalysis.bias_direction}</span>
+                    </div>
+                    <p><strong>Objectivity Score:</strong> ${Math.round(biasAnalysis.objectivity_score * 100)}%</p>
+                    <div class="objectivity-bar">
+                        <div class="objectivity-fill" style="width: ${biasAnalysis.objectivity_score * 100}%"></div>
+                    </div>
+                </div>
+            `;
+            
+            // Bias indicators breakdown
+            if (biasAnalysis.left_indicators.count > 0 || biasAnalysis.right_indicators.count > 0) {
+                detailsHTML += `
+                    <div class="detail-card">
+                        <h3>📊 Bias Indicators Found</h3>
+                `;
+                
+                if (biasAnalysis.left_indicators.count > 0) {
+                    detailsHTML += `
+                        <p><strong>🔵 Left-leaning terms (${biasAnalysis.left_indicators.count}):</strong></p>
+                        <div class="keywords">
+                    `;
+                    biasAnalysis.left_indicators.terms.forEach(term => {
+                        detailsHTML += `<span class="keyword-tag" style="background: #e3f2fd;">${term}</span>`;
+                    });
+                    detailsHTML += `</div>`;
+                }
+                
+                if (biasAnalysis.right_indicators.count > 0) {
+                    detailsHTML += `
+                        <p><strong>🔴 Right-leaning terms (${biasAnalysis.right_indicators.count}):</strong></p>
+                        <div class="keywords">
+                    `;
+                    biasAnalysis.right_indicators.terms.forEach(term => {
+                        detailsHTML += `<span class="keyword-tag" style="background: #fce4ec;">${term}</span>`;
+                    });
+                    detailsHTML += `</div>`;
+                }
+                
+                if (biasAnalysis.neutral_indicators.count > 0) {
+                    detailsHTML += `
+                        <p><strong>⚖️ Neutral/Objective terms (${biasAnalysis.neutral_indicators.count}):</strong></p>
+                        <div class="keywords">
+                    `;
+                    biasAnalysis.neutral_indicators.terms.forEach(term => {
+                        detailsHTML += `<span class="keyword-tag" style="background: #e8f5e8;">${term}</span>`;
+                    });
+                    detailsHTML += `</div>`;
+                }
+                
+                detailsHTML += `</div>`;
+            }
+            
+            // Suspicious keywords
+            if (data.content_analysis.suspicious_keywords.length > 0) {
+                detailsHTML += `
+                    <div class="detail-card">
+                        <h3>⚠️ Suspicious Keywords Found</h3>
+                        <div class="keywords">
+                `;
+                data.content_analysis.suspicious_keywords.forEach(keyword => {
+                    detailsHTML += `<span class="keyword-tag">${keyword}</span>`;
+                });
+                detailsHTML += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            analysisDetails.innerHTML = detailsHTML;
+            results.style.display = 'block';
+        }
+        
+        // Allow Enter key to trigger analysis
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && (e.target.id === 'url-input' || e.target.id === 'text-input')) {
+                analyzeContent();
+            }
+        });
+    </script>
+</body>
+</html>
