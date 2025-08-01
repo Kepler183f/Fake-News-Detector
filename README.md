@@ -4,8 +4,6 @@
 AI-powered web application that analyzes news articles for credibility and political bias using Machine Learning and Natural Language Processing.
 
 
-![Screenshot](screenshot-2025-07-31-10-05-00.png)
-
 
 ## Features
 
