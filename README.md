@@ -1,7 +1,9 @@
-<<<<<<< HEAD
+
 # 🔍 Fake News Detector
 
 AI-powered web application that analyzes news articles for credibility and political bias using Machine Learning and Natural Language Processing.
+
+![Screenshot]("Screenshot 2025-07-31 at 10.05.00 PM.png")
 
 ## Features
 
@@ -64,4 +66,3 @@ Try with different news sources:
 - **Suspicious:** Known misinformation sites
 =======
 # Fake-News-Detector
->>>>>>> 8fdba86267c22c0875b561c77785bcb7cc0e12d9
